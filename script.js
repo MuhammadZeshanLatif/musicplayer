@@ -75,13 +75,13 @@ function playBackSong() {
 }
 events.forEach(e => forbackIcon[0].addEventListener(e, playBackSong));
 
-//To pause and play the song custom icons
+
+// To pause and play the song custom icons
 function playPauseSong(event) {
     if (event) event.preventDefault();
 
     if (playButton.classList.contains("fa-play")) {
-        song.load();
-        song.play().then(() => { //added then/catch to handle playback restrictions on mobile
+        song.play().then(() => { // Play from current time, don't reload
             playButton.classList.replace("fa-play", "fa-pause");
             image.style.animation = "infiniteRotation 23s linear infinite";
             image.style.animationPlayState = "running";
@@ -96,6 +96,7 @@ function playPauseSong(event) {
         clearInterval(progressChange);
     }
 }
+
 events.forEach(e => playButtonB.addEventListener(e, playPauseSong));
 
 function updateProgressBar() {
@@ -123,20 +124,38 @@ function changeVolume() {
 }
 volumeControl.addEventListener("input", changeVolume);
 
+// Debounce function to prevent multiple rapid clicks
+function debounce(func, delay) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
 //mute the sound
 function muteVolume() {
-    if (song.volume > 0) {
-        previousVolume = song.volume;
-        song.volume = 0;
+    song.muted = !song.muted; // Toggle muted property
+
+    if (song.muted) {
+        // When muted, set volume icon to "muted" state
         volumeControl.value = 0;
         volumeIcon.classList.replace("fa-volume-low", "fa-volume-xmark");
     } else {
-        song.volume = previousVolume;
+        // When unmuted, restore previous volume level
         volumeControl.value = previousVolume * 100;
         volumeIcon.classList.replace("fa-volume-xmark", "fa-volume-low");
+        song.volume = previousVolume; // Restore volume
     }
 }
-events.forEach(e => volumeIcon.addEventListener(e, muteVolume));
+
+// Debounce the muteVolume function
+const debouncedMuteVolume = debounce(muteVolume, 300);
+
+// Add event listeners with debounced function for mobile support
+events.forEach(e => volumeIcon.addEventListener(e, debouncedMuteVolume));
+
+
 
 // Display total song duration
 function timeOfSong(songDuration) {
